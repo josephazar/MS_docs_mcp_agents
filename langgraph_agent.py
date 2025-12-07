@@ -2,19 +2,32 @@
 LangGraph Agent implementation with Microsoft Learn MCP integration
 """
 import os
-from typing import TypedDict, Annotated, Sequence
 from langchain_openai import AzureChatOpenAI
-from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
-from langgraph.graph import StateGraph, END
-from langgraph.prebuilt import create_react_agent
+from langchain_mcp_adapters.client import MultiServerMCPClient
+from langchain.agents import create_agent
 
 
-# Define the state for our agent
-class AgentState(TypedDict):
-    messages: Annotated[Sequence[BaseMessage], "The messages in the conversation"]
+# Global MCP client instance
+_mcp_client = None
 
 
-# Initialize Azure OpenAI
+async def get_mcp_client():
+    """Get or create the MCP client instance"""
+    global _mcp_client
+    
+    if _mcp_client is None:
+        _mcp_client = MultiServerMCPClient(
+            {
+                "microsoft_learn": {
+                    "transport": "streamable_http",
+                    "url": "https://learn.microsoft.com/api/mcp",
+                }
+            }
+        )
+    
+    return _mcp_client
+
+
 def create_llm():
     """Create and return Azure OpenAI LLM instance"""
     return AzureChatOpenAI(
@@ -26,10 +39,9 @@ def create_llm():
     )
 
 
-# Main function to run the agent
 async def run_langgraph_agent(query: str) -> str:
     """
-    Run the LangGraph agent with the given query
+    Run the LangGraph agent with MCP tools from Microsoft Learn
     
     Args:
         query: The user's question
@@ -38,22 +50,40 @@ async def run_langgraph_agent(query: str) -> str:
         The agent's response
     """
     try:
+        # Get MCP client
+        client = await get_mcp_client()
+        
+        # Get tools from MCP server
+        tools = await client.get_tools()
+        
         # Create the LLM
         llm = create_llm()
         
-        # For now, use direct LLM call without MCP tools
-        # This is a simplified version that works with Azure OpenAI
-        system_message = SystemMessage(content="""You are a helpful assistant that answers questions about Microsoft documentation.
-You provide accurate, helpful responses about Microsoft Azure, .NET, and other Microsoft technologies.
-When answering questions, provide detailed explanations with examples when appropriate.
-Always structure your responses with clear headings and formatting.""")
+        # Create agent with MCP tools using correct API
+        agent = create_agent(
+            llm,
+            tools,
+            system_prompt="""You are a helpful assistant that answers questions about Microsoft documentation.
+You have access to the Microsoft Learn documentation through MCP tools.
+When answering questions, search for relevant documentation and provide accurate, helpful responses.
+Always cite the documentation sources you use and provide detailed explanations with examples when appropriate.
+Structure your responses with clear headings and formatting."""
+        )
         
-        human_message = HumanMessage(content=query)
+        # Run the agent
+        result = await agent.ainvoke(
+            {"messages": [{"role": "user", "content": query}]}
+        )
         
-        # Invoke the LLM directly
-        response = await llm.ainvoke([system_message, human_message])
+        # Extract the final response
+        if result and "messages" in result:
+            # Get the last message which should be the assistant's response
+            last_message = result["messages"][-1]
+            if hasattr(last_message, 'content'):
+                return last_message.content
+            return str(last_message)
         
-        return response.content
+        return str(result)
             
     except Exception as e:
-        return f"Error running LangGraph agent: {str(e)}\n\nNote: This is using a simplified LangGraph implementation with direct Azure OpenAI calls. For full MCP integration, additional configuration is required."
+        return f"Error running LangGraph agent with MCP: {str(e)}\n\nPlease check that:\n1. The Microsoft Learn MCP server is accessible\n2. Your Azure OpenAI credentials are correct\n3. Network connectivity is available"
