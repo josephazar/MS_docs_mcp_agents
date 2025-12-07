@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microsoft Docs MCP Agent - PoC</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #0078d4 0%, #00bcf2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        /* Agent Toggle */
+        .agent-toggle {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .agent-toggle-label {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 1.1em;
+            display: block;
+        }
+        
+        .toggle-buttons {
+            display: inline-flex;
+            background: #f0f0f0;
+            border-radius: 8px;
+            padding: 4px;
+        }
+        
+        .toggle-btn {
+            padding: 12px 30px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            border-radius: 6px;
+            transition: all 0.3s;
+            color: #666;
+        }
+        
+        .toggle-btn.active {
+            background: linear-gradient(135deg, #0078d4 0%, #00bcf2 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 120, 212, 0.3);
+        }
+        
+        .toggle-btn:hover:not(.active) {
+            background: #e0e0e0;
+        }
+        
+        .query-form {
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 1.1em;
+        }
+        
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 100px;
+            transition: border-color 0.3s;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #0078d4;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #0078d4 0%, #00bcf2 100%);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 120, 212, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .response-section {
+            margin-top: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #0078d4;
+        }
+        
+        .response-section.error {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+        
+        .response-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .response-section.error h3 {
+            color: #dc3545;
+        }
+        
+        .response-text {
+            color: #555;
+            line-height: 1.8;
+            word-wrap: break-word;
+        }
+        
+        /* Markdown styling */
+        .response-text h1, .response-text h2, .response-text h3, .response-text h4 {
+            color: #0078d4;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .response-text h1 {
+            font-size: 1.8em;
+            border-bottom: 2px solid #0078d4;
+            padding-bottom: 5px;
+        }
+        
+        .response-text h2 {
+            font-size: 1.5em;
+        }
+        
+        .response-text h3 {
+            font-size: 1.3em;
+        }
+        
+        .response-text h4 {
+            font-size: 1.1em;
+        }
+        
+        .response-text ul, .response-text ol {
+            margin-left: 25px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .response-text li {
+            margin-bottom: 5px;
+        }
+        
+        .response-text code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: #d63384;
+            font-size: 0.9em;
+        }
+        
+        .response-text pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        
+        .response-text pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+            font-size: 0.95em;
+        }
+        
+        .response-text a {
+            color: #0078d4;
+            text-decoration: none;
+        }
+        
+        .response-text a:hover {
+            text-decoration: underline;
+        }
+        
+        .response-text blockquote {
+            border-left: 4px solid #0078d4;
+            padding-left: 15px;
+            margin: 15px 0;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .response-text table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 15px 0;
+        }
+        
+        .response-text th, .response-text td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        
+        .response-text th {
+            background: #0078d4;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .response-text tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        
+        .response-text p {
+            margin-bottom: 12px;
+        }
+        
+        .query-display {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .query-display strong {
+            color: #0078d4;
+        }
+        
+        .agent-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 600;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        
+        .agent-badge.maf {
+            background: #00bcf2;
+            color: white;
+        }
+        
+        .agent-badge.langgraph {
+            background: #10b981;
+            color: white;
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            background: #00bcf2;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-left: 10px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #0078d4;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Microsoft Docs MCP Agent</h1>
+            <p>Ask questions about Microsoft documentation <span class="badge">PoC</span></p>
+        </div>
+        
+        <div class="content">
+            <!-- Agent Toggle -->
+            <div class="agent-toggle">
+                <span class="agent-toggle-label">Select Agent Framework:</span>
+                <div class="toggle-buttons">
+                    <button 
+                        class="toggle-btn {% if agent_type == 'maf' or not agent_type %}active{% endif %}" 
+                        onclick="selectAgent('maf')"
+                        id="btn-maf"
+                    >
+                        Microsoft Agent Framework
+                    </button>
+                    <button 
+                        class="toggle-btn {% if agent_type == 'langgraph' %}active{% endif %}" 
+                        onclick="selectAgent('langgraph')"
+                        id="btn-langgraph"
+                    >
+                        LangGraph
+                    </button>
+                </div>
+            </div>
+            
+            <form class="query-form" method="post" id="queryForm" onsubmit="showLoading()">
+                <div class="form-group">
+                    <label for="query_text">Your Question:</label>
+                    <textarea 
+                        id="query_text" 
+                        name="query_text" 
+                        placeholder="e.g., How do I create an Azure storage account using Azure CLI?"
+                        required
+                    >{{ query }}</textarea>
+                </div>
+                
+                <button type="submit" class="btn">🔍 Ask Agent</button>
+            </form>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 15px; color: #666;">Processing your query...</p>
+            </div>
+            
+            {% if response %}
+            <div class="response-section {% if error %}error{% endif %}">
+                <h3>
+                    {% if error %}❌ Error{% else %}✅ Response{% endif %}
+                    {% if agent_type == 'maf' %}
+                        <span class="agent-badge maf">MAF</span>
+                    {% elif agent_type == 'langgraph' %}
+                        <span class="agent-badge langgraph">LangGraph</span>
+                    {% endif %}
+                </h3>
+                
+                {% if query %}
+                <div class="query-display">
+                    <strong>Your Query:</strong> {{ query }}
+                </div>
+                {% endif %}
+                
+                <div class="response-text">{{ response | safe }}</div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="footer">
+            <p>Powered by <strong>Microsoft Agent Framework</strong> + <strong>LangGraph</strong> + <strong>Microsoft Learn MCP Server</strong></p>
+            <p style="margin-top: 5px; font-size: 0.85em;">Azure OpenAI • FastAPI • Jinja2</p>
+        </div>
+    </div>
+    
+    <script>
+        let selectedAgent = '{{ agent_type }}' || 'maf';
+        
+        function selectAgent(agent) {
+            selectedAgent = agent;
+            
+            // Update button states
+            document.getElementById('btn-maf').classList.toggle('active', agent === 'maf');
+            document.getElementById('btn-langgraph').classList.toggle('active', agent === 'langgraph');
+            
+            // Update form action
+            const form = document.getElementById('queryForm');
+            if (agent === 'maf') {
+                form.action = '/query';
+            } else {
+                form.action = '/query-langgraph';
+            }
+        }
+        
+        function showLoading() {
+            document.getElementById('loading').classList.add('active');
+        }
+        
+        // Initialize form action on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            selectAgent(selectedAgent);
+        });
+    </script>
+</body>
+</html>
