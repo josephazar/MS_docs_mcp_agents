@@ -1,5 +1,6 @@
 import asyncio
 import os
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -8,6 +9,9 @@ from agent_framework import ChatAgent, MCPStreamableHTTPTool
 from agent_framework.azure import AzureOpenAIChatClient
 import markdown2
 from langgraph_agent import run_langgraph_agent
+
+# Load environment variables
+load_dotenv()
 
 app = FastAPI(title="Microsoft Docs MCP Agent PoC")
 

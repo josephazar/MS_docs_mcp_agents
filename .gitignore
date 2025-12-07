@@ -1,6 +1,6 @@
 # Environment variables
 .env
-
+.claude
 # Python
 __pycache__/
 *.py[cod]
@@ -72,3 +72,5 @@ page_texts/
 *.tar.gz
 test_results.md
 research_findings.md
+
+MCP_INTEGRATION_SUCCESS.md
